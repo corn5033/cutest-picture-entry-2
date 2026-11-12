@@ -13,9 +13,10 @@ const W = 1024;
 const H = 1024;
 
 type Col = [number, number, number];
+type Box = [number, number, number, number];
 type SD = (x: number, y: number) => number;
 interface Layer {
-  box: [number, number, number, number];
+  box: Box;
   sd: SD;
   fill: Col | ((x: number, y: number) => Col);
   alpha?: number;
@@ -38,9 +39,9 @@ function ellipse(cx: number, cy: number, rx: number, ry: number, rot = 0): SD {
   };
 }
 const circle = (cx: number, cy: number, r: number): SD => (x, y) => Math.hypot(x - cx, y - cy) - r;
-function capsule(ax: number, ay: number, bx: number, by: number, r: number): SD {
+function capsule(ax: number, ay: number, bx2: number, by2: number, r: number): SD {
   return (x, y) => {
-    const pax = x - ax, pay = y - ay, bax = bx - ax, bay = by - ay;
+    const pax = x - ax, pay = y - ay, bax = bx2 - ax, bay = by2 - ay;
     const h = clamp((pax * bax + pay * bay) / (bax * bax + bay * bay));
     return Math.hypot(pax - bax * h, pay - bay * h) - r;
   };
@@ -67,7 +68,7 @@ function heart(cx: number, cy: number, s: number): SD {
 }
 const arcSmile = (cx: number, cy: number, r: number, w: number): SD => (x, y) =>
   Math.max(Math.abs(Math.hypot(x - cx, y - cy) - r) - w / 2, cy - y);
-const bx = (cx: number, cy: number, rx: number, ry: number, pad = 12): [number, number, number, number] => [cx - rx - pad, cy - ry - pad, cx + rx + pad, cy + ry + pad];
+const bx = (cx: number, cy: number, rx: number, ry: number, pad = 12): Box => [cx - rx - pad, cy - ry - pad, cx + rx + pad, cy + ry + pad];
 
 // ---------- palette ----------
 const LINE: Col = [150, 98, 104]; // soft rose-brown outline
@@ -75,9 +76,10 @@ const CREAM: Col = [255, 247, 238];
 const PINK: Col = [255, 168, 184];
 const PINK_D: Col = [248, 128, 154];
 const GOLD: Col = [255, 214, 96];
+const WHITE: Col = [255, 255, 255];
 
 function lit(base: Col, cy: number, ry: number): (x: number, y: number) => Col {
-  const hi = mix(base, [255, 255, 255], 0.55);
+  const hi = mix(base, WHITE, 0.55);
   const lo = mix(base, [232, 196, 208], 0.38);
   return (_x, y) => {
     const t = clamp((y - (cy - ry)) / (2 * ry));
@@ -87,7 +89,7 @@ function lit(base: Col, cy: number, ry: number): (x: number, y: number) => Col {
 
 const layers: Layer[] = [];
 const add = (l: Layer): void => { layers.push(l); };
-const blob = (sd: SD, box: [number, number, number, number], base: Col, cy: number, ry: number, ow = 6): void =>
+const blob = (sd: SD, box: Box, base: Col, cy: number, ry: number, ow = 6): void =>
   add({ box, sd, fill: lit(base, cy, ry), outline: ow > 0 ? { w: ow, col: LINE } : undefined });
 const oval = (cx: number, cy: number, rx: number, ry: number, base: Col, rot = 0, ow = 6): void =>
   blob(ellipse(cx, cy, rx, ry, rot), bx(cx, cy, Math.max(rx, ry), Math.max(rx, ry), ow + 8), base, cy, Math.max(rx, ry), ow);
@@ -108,7 +110,7 @@ add({
 const bokeh: Array<[number, number, number, Col, number]> = [
   [110, 140, 90, [255, 205, 220], 0.55], [905, 110, 66, [255, 240, 180], 0.65], [60, 560, 56, [200, 232, 255], 0.55],
   [960, 500, 80, [255, 210, 228], 0.5], [140, 900, 76, [255, 240, 185], 0.55], [910, 890, 96, [200, 238, 222], 0.55],
-  [790, 55, 36, [215, 235, 255], 0.6], [330, 50, 34, [255, 218, 232], 0.6], [200, 330, 30, [255, 255, 255], 0.5], [830, 360, 26, [255, 255, 255], 0.5],
+  [790, 55, 36, [215, 235, 255], 0.6], [330, 50, 34, [255, 218, 232], 0.6], [200, 330, 30, WHITE, 0.5], [830, 360, 26, WHITE, 0.5],
 ];
 for (const [x, y, r, c, a] of bokeh) dot(x, y, r, c, a, 3);
 // ground + shadow
@@ -125,9 +127,9 @@ glow(334, 160, 30, 70, [255, 205, 215], 0.7, 18);
 
 // round fluffy tail peeking out, then body, feet
 oval(782, 842, 52, 52, CREAM, 0, 6);
-glow(770, 826, 20, 16, [255, 255, 255], 0.9, 8);
+glow(770, 826, 20, 16, WHITE, 0.9, 8);
 oval(512, 790, 215, 165, CREAM, 0, 6);
-glow(512, 830, 140, 100, [255, 255, 255], 0.9, 30);
+glow(512, 830, 140, 100, WHITE, 0.9, 30);
 oval(372, 912, 92, 48, CREAM, 0, 6);
 oval(652, 912, 92, 48, CREAM, 0, 6);
 for (const x of [372, 652]) {
@@ -136,8 +138,8 @@ for (const x of [372, 652]) {
 }
 
 // forehead tuft peeking over the top of the head (drawn behind it)
-for (const [x, y, rot] of [[452, 232, -0.6], [512, 205, 0], [572, 232, 0.6]] as Array<[number, number, number]>) {
-  add({ box: bx(x, y, 60, 70, 12), sd: ellipse(x, y, 24, 52, rot), fill: lit(CREAM, y, 52), outline: { w: 6, col: LINE } });
+for (const [x, y, rot, rx, ry] of [[492, 212, -0.35, 22, 46], [536, 214, 0.5, 20, 40]] as Array<[number, number, number, number, number]>) {
+  add({ box: bx(x, y, 60, 70, 12), sd: ellipse(x, y, rx, ry, rot), fill: lit(CREAM, y, ry), outline: { w: 6, col: LINE } });
 }
 // head: wide, chubby, slightly squashed
 const headCy = 470;
@@ -150,12 +152,13 @@ glow(724, 560, 70, 44, PINK, 0.6, 20);
 // eyes: big, glossy, set low and wide for baby proportions
 for (const ex of [372, 652]) {
   const ey = 500;
-  add({ box: bx(ex, ey, 70, 84, 8), sd: ellipse(ex, ey, 58, 74), fill: (x, y) => mix([40, 26, 44], [96, 62, 96], clamp((y - (ey - 20)) / 90)) });
-  add({ box: bx(ex, ey + 30, 50, 50, 14), sd: ellipse(ex, ey + 34, 38, 34), fill: [140, 105, 170], alpha: 0.55, soft: 16 });
-  dot(ex - 18, ey - 28, 23, [255, 255, 255], 1, 1.4);
-  dot(ex + 22, ey + 22, 11, [255, 255, 255], 0.95);
-  dot(ex + 24, ey - 22, 6, [255, 255, 255], 0.85);
-  dot(ex - 24, ey + 38, 5, [255, 255, 255], 0.7);
+  add({ box: bx(ex, ey, 76, 90, 8), sd: ellipse(ex, ey, 64, 80), fill: (_x, y) => mix([40, 26, 44], [110, 74, 118], clamp((y - (ey - 20)) / 100)) });
+  add({ box: bx(ex, ey + 34, 56, 56, 14), sd: ellipse(ex, ey + 38, 44, 38), fill: [170, 140, 215], alpha: 0.6, soft: 18 });
+  add({ box: bx(ex, ey + 56, 40, 24, 10), sd: ellipse(ex, ey + 62, 30, 12), fill: [255, 190, 215], alpha: 0.5, soft: 8 });
+  dot(ex - 18, ey - 28, 23, WHITE, 1, 1.4);
+  dot(ex + 22, ey + 22, 11, WHITE, 0.95);
+  dot(ex + 24, ey - 22, 6, WHITE, 0.85);
+  dot(ex - 24, ey + 38, 5, WHITE, 0.7);
 }
 // nose, mouth
 add({ box: bx(512, 548, 26, 22, 8), sd: ellipse(512, 548, 22, 16), fill: PINK_D, outline: { w: 4, col: LINE } });
@@ -184,12 +187,12 @@ for (let i = 0; i < 5; i++) {
   add({ box: bx(px, py, 28, 28, 12), sd: circle(px, py, 24), fill: lit([255, 190, 205], py, 24), outline: { w: 4.5, col: LINE } });
 }
 add({ box: bx(fx, fy, 26, 26, 8), sd: circle(fx, fy, 19), fill: lit(GOLD, fy, 19), outline: { w: 4.5, col: LINE } });
-dot(fx - 6, fy - 7, 5, [255, 255, 255], 0.85);
+dot(fx - 6, fy - 7, 5, WHITE, 0.85);
 
 // arms hugging a little heart
 const hx = 512, hy = 800;
 add({ box: bx(hx, hy, 90, 90, 14), sd: heart(hx, hy, 66), fill: lit([255, 120, 150], hy, 70), outline: { w: 6, col: LINE } });
-dot(hx - 26, hy - 14, 10, [255, 255, 255], 0.8);
+dot(hx - 26, hy - 14, 10, WHITE, 0.8);
 oval(402, 790, 70, 46, CREAM, -0.5, 6);
 oval(622, 790, 70, 46, CREAM, 0.5, 6);
 for (const [x, y] of [[434, 760], [452, 775], [592, 775], [610, 760]] as Array<[number, number]>) {
@@ -201,8 +204,12 @@ for (const [x, y, s, c] of [[170, 230, 22, [255, 140, 170]], [860, 205, 28, [255
   add({ box: bx(x, y, s * 1.4, s * 1.4, 10), sd: heart(x, y, s), fill: c, outline: { w: 4.5, col: LINE } });
 }
 for (const [x, y, s] of [[225, 105, 22], [600, 70, 16], [120, 680, 20], [905, 680, 24], [930, 810, 14], [240, 990, 12], [820, 120, 16]] as Array<[number, number, number]>) {
-  const a = ellipse(x, y, s, s * 0.2), b = ellipse(x, y, s * 0.2, s);
-  add({ box: bx(x, y, s, s, 6), sd: (px, py) => smoothUnion(a, b, 4)(px, py), fill: [255, 252, 220], outline: { w: 3, col: [246, 205, 120] } });
+  add({
+    box: bx(x, y, s, s, 6),
+    sd: smoothUnion(ellipse(x, y, s, s * 0.2), ellipse(x, y, s * 0.2, s), 4),
+    fill: [255, 252, 220],
+    outline: { w: 3, col: [246, 205, 120] },
+  });
 }
 
 // ---------- rasterise ----------
