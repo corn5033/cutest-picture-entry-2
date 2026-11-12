@@ -74,7 +74,6 @@ const LINE: Col = [150, 98, 104]; // soft rose-brown outline
 const CREAM: Col = [255, 247, 238];
 const PINK: Col = [255, 168, 184];
 const PINK_D: Col = [248, 128, 154];
-const EYE: Col = [62, 40, 56];
 const GOLD: Col = [255, 214, 96];
 
 function lit(base: Col, cy: number, ry: number): (x: number, y: number) => Col {
@@ -122,11 +121,11 @@ oval(748, 330, 74, 175, CREAM, -0.62, 6);
 oval(742, 345, 40, 130, PINK, -0.62, 0);
 oval(330, 215, 84, 205, CREAM, 0.12, 6);
 oval(334, 225, 44, 150, PINK, 0.12, 0);
-// inner-ear soft shading
 glow(334, 160, 30, 70, [255, 205, 215], 0.7, 18);
 
-// tail peeks out, feet, body
-dot(768, 850, 44, CREAM, 1, 1.2);
+// round fluffy tail peeking out, then body, feet
+oval(782, 842, 52, 52, CREAM, 0, 6);
+glow(770, 826, 20, 16, [255, 255, 255], 0.9, 8);
 oval(512, 790, 215, 165, CREAM, 0, 6);
 glow(512, 830, 140, 100, [255, 255, 255], 0.9, 30);
 oval(372, 912, 92, 48, CREAM, 0, 6);
@@ -137,12 +136,13 @@ for (const x of [372, 652]) {
 }
 
 // forehead tuft peeking over the top of the head (drawn behind it)
-for (const [x, y, rot] of [[462, 238, -0.55], [512, 222, 0], [562, 238, 0.55]] as Array<[number, number, number]>) {
-  add({ box: bx(x, y, 44, 56, 12), sd: ellipse(x, y, 18, 40, rot), fill: lit(CREAM, y, 40), outline: { w: 6, col: LINE } });
+for (const [x, y, rot] of [[452, 232, -0.6], [512, 205, 0], [572, 232, 0.6]] as Array<[number, number, number]>) {
+  add({ box: bx(x, y, 60, 70, 12), sd: ellipse(x, y, 24, 52, rot), fill: lit(CREAM, y, 52), outline: { w: 6, col: LINE } });
 }
 // head: wide, chubby, slightly squashed
 const headCy = 470;
 blob(ellipse(512, headCy, 300, 250), bx(512, headCy, 310, 260, 14), CREAM, headCy, 250, 6);
+
 // cheeks (fluffy), blush
 glow(300, 560, 70, 44, PINK, 0.6, 20);
 glow(724, 560, 70, 44, PINK, 0.6, 20);
@@ -160,6 +160,10 @@ for (const ex of [372, 652]) {
 // nose, mouth
 add({ box: bx(512, 548, 26, 22, 8), sd: ellipse(512, 548, 22, 16), fill: PINK_D, outline: { w: 4, col: LINE } });
 dot(504, 543, 5, [255, 220, 228], 0.9);
+// three tiny blush strokes on each cheek
+for (const [x, y] of [[270, 570], [292, 578], [314, 570], [710, 570], [732, 578], [754, 570]] as Array<[number, number]>) {
+  add({ box: bx(x, y, 8, 14, 4), sd: capsule(x - 4, y + 7, x + 4, y - 7, 2.2), fill: PINK_D, alpha: 0.6, soft: 1.3 });
+}
 add({ box: bx(512, 570, 6, 16, 6), sd: capsule(512, 562, 512, 578, 2.6), fill: LINE });
 add({ box: bx(488, 584, 30, 24, 6), sd: arcSmile(488, 574, 22, 5.5), fill: LINE, soft: 1.3 });
 add({ box: bx(536, 584, 30, 24, 6), sd: arcSmile(536, 574, 22, 5.5), fill: LINE, soft: 1.3 });
@@ -182,7 +186,7 @@ for (let i = 0; i < 5; i++) {
 add({ box: bx(fx, fy, 26, 26, 8), sd: circle(fx, fy, 19), fill: lit(GOLD, fy, 19), outline: { w: 4.5, col: LINE } });
 dot(fx - 6, fy - 7, 5, [255, 255, 255], 0.85);
 
-// body detail: arms hugging a heart
+// arms hugging a little heart
 const hx = 512, hy = 800;
 add({ box: bx(hx, hy, 90, 90, 14), sd: heart(hx, hy, 66), fill: lit([255, 120, 150], hy, 70), outline: { w: 6, col: LINE } });
 dot(hx - 26, hy - 14, 10, [255, 255, 255], 0.8);
